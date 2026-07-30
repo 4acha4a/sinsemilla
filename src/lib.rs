@@ -272,6 +272,7 @@ impl CommitDomain {
 mod tests {
     use alloc::vec::Vec;
 
+    use crate::sinsemilla_s::sinsemilla_s;
     use super::{Pad, K};
     use pasta_curves::{arithmetic::CurveExt, pallas};
 
@@ -317,20 +318,22 @@ mod tests {
     }
 
     #[test]
-    fn sinsemilla_s() {
-        use super::sinsemilla_s::SINSEMILLA_S;
+    fn compressed_sinsemilla_table_matches_hash_to_curve() {
         use group::Curve;
-        use pasta_curves::arithmetic::CurveAffine;
+        use pasta_curves::arithmetic::CurveExt;
 
-        let hasher = pallas::Point::hash_to_curve(super::S_PERSONALIZATION);
+        let hasher =
+            pallas::Point::hash_to_curve(super::S_PERSONALIZATION);
 
-        for j in 0..(1u32 << K) {
-            let computed = {
-                let point = hasher(&j.to_le_bytes()).to_affine().coordinates().unwrap();
-                (*point.x(), *point.y())
-            };
-            let actual = SINSEMILLA_S[j as usize];
-            assert_eq!(computed, actual);
+        for index in 0..(1u32 << K) {
+            let expected =
+                hasher(&index.to_le_bytes()).to_affine();
+            let actual = sinsemilla_s(index);
+
+            assert_eq!(
+                actual, expected,
+                "invalid compressed Sinsemilla point at index {index}"
+            );
         }
     }
 }
