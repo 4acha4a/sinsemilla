@@ -16,9 +16,9 @@ use pasta_curves::{
 use subtle::CtOption;
 
 mod addition;
+use crate::sinsemilla_s::sinsemilla_s;
 use self::addition::IncompletePoint;
 mod sinsemilla_s;
-pub use sinsemilla_s::SINSEMILLA_S;
 
 /// Number of bits of each message piece in $\mathsf{SinsemillaHashToPoint}$
 pub const K: usize = 10;
@@ -154,10 +154,15 @@ impl HashDomain {
         padded
             .chunks(K)
             .fold(IncompletePoint::from(self.Q), |acc, chunk| {
-                let (S_x, S_y) =
-                    SINSEMILLA_S[lebs2ip_k(chunk.try_into().expect("correct length")) as usize];
-                let S_chunk = pallas::Affine::from_xy(S_x, S_y).unwrap();
-                (acc + S_chunk) + acc
+                let index = lebs2ip_k(
+                    chunk
+                        .try_into()
+                        .expect("Sinsemilla chunk must contain K bits"),
+                );
+
+                let s_chunk = sinsemilla_s(index);
+
+                (acc + s_chunk) + acc
             })
     }
 
